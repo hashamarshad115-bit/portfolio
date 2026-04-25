@@ -3,22 +3,27 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
     || window.innerWidth <= 768
     || ('ontouchstart' in window);
 
-// ===== Font Awesome Icon Fallback =====
+// ===== Font Awesome Icon Fallback (idle — never blocks first paint) =====
 (function checkIcons() {
-    const testEl = document.createElement('i');
-    testEl.className = 'fas fa-check';
-    testEl.style.cssText = 'position:absolute;visibility:hidden;font-size:20px';
-    document.body.appendChild(testEl);
-    setTimeout(() => {
-        const computed = window.getComputedStyle(testEl, ':before').content;
-        document.body.removeChild(testEl);
-        if (!computed || computed === 'none' || computed === '') {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css';
-            document.head.appendChild(link);
-        }
-    }, 1000);
+    const run = () => {
+        const testEl = document.createElement('i');
+        testEl.className = 'fas fa-check';
+        testEl.style.cssText = 'position:absolute;visibility:hidden;font-size:20px';
+        document.body.appendChild(testEl);
+        setTimeout(() => {
+            const computed = window.getComputedStyle(testEl, ':before').content;
+            document.body.removeChild(testEl);
+            if (!computed || computed === 'none' || computed === '') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css';
+                document.head.appendChild(link);
+            }
+        }, 800);
+    };
+    // Use idle callback so it never blocks first paint
+    if ('requestIdleCallback' in window) requestIdleCallback(run);
+    else setTimeout(run, 200);
 })();
 
 // Background is now pure CSS aurora — no JS particles needed
@@ -51,10 +56,17 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
     setTimeout(type, 1200);
 })();
 
-// ===== Sticky Navbar =====
+// ===== Sticky Navbar — rAF throttled =====
 const navbar = document.getElementById('navbar');
+let navTicking = false;
 window.addEventListener('scroll', () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 50);
+    if (!navTicking) {
+        requestAnimationFrame(() => {
+            navbar.classList.toggle('scrolled', window.scrollY > 50);
+            navTicking = false;
+        });
+        navTicking = true;
+    }
 }, { passive: true });
 
 // ===== Mobile Nav Toggle =====
@@ -73,30 +85,39 @@ navLinksEl.querySelectorAll('a').forEach(link => {
     });
 });
 
-// ===== Active Nav Link on Scroll =====
+// ===== Active Nav Link on Scroll — rAF throttled =====
 const sections = document.querySelectorAll('section[id]');
+let sectionTicking = false;
 window.addEventListener('scroll', () => {
-    const scrollY = window.scrollY + 140;
-    sections.forEach(section => {
-        const top = section.offsetTop;
-        const height = section.offsetHeight;
-        const id = section.getAttribute('id');
-        const link = document.querySelector(`.nav-links a[href="#${id}"]`);
-        if (link) link.classList.toggle('active', scrollY >= top && scrollY < top + height);
-    });
+    if (!sectionTicking) {
+        requestAnimationFrame(() => {
+            const scrollY = window.scrollY + 140;
+            sections.forEach(section => {
+                const top = section.offsetTop;
+                const height = section.offsetHeight;
+                const id = section.getAttribute('id');
+                const link = document.querySelector(`.nav-links a[href="#${id}"]`);
+                if (link) link.classList.toggle('active', scrollY >= top && scrollY < top + height);
+            });
+            sectionTicking = false;
+        });
+        sectionTicking = true;
+    }
 }, { passive: true });
 
-// ===== Enhanced Scroll Animations with Staggered Delays =====
+// ===== Scroll Reveal Animations (AOS) with staggered delays =====
 const aosElements = document.querySelectorAll('[data-aos]');
+// Reduce delays on mobile — shorter stagger feels snappier
+const delayMultiplier = isMobile ? 0.5 : 1;
 const aosObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            const delay = parseInt(entry.target.getAttribute('data-aos-delay') || 0);
+            const delay = parseInt(entry.target.getAttribute('data-aos-delay') || 0) * delayMultiplier;
             setTimeout(() => entry.target.classList.add('visible'), delay);
             aosObserver.unobserve(entry.target);
         }
     });
-}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+}, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
 aosElements.forEach(el => aosObserver.observe(el));
 
 // ===== Skill Bar Animation =====
@@ -171,7 +192,7 @@ filterBtns.forEach(btn => {
     });
 });
 
-// ===== Card Tilt Effect — desktop only =====
+// ===== Card Tilt Effect — desktop only (uses translate3d for GPU layer) =====
 if (!isMobile) {
     document.querySelectorAll('.project-card, .stat-card, .skill-category').forEach(card => {
         card.addEventListener('mousemove', (e) => {
@@ -180,14 +201,14 @@ if (!isMobile) {
             const y = e.clientY - rect.top;
             const cx = rect.width / 2;
             const cy = rect.height / 2;
-            const rotX = ((y - cy) / cy) * -5;
-            const rotY = ((x - cx) / cx) * 5;
-            card.style.transform = `translateY(-6px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-            card.style.transition = 'transform 0.1s ease';
-        });
+            const rotX = ((y - cy) / cy) * -4;
+            const rotY = ((x - cx) / cx) * 4;
+            card.style.transform = `translate3d(0,-6px,0) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            card.style.transition = 'transform 0.08s linear';
+        }, { passive: true });
         card.addEventListener('mouseleave', () => {
             card.style.transform = '';
-            card.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
+            card.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
         });
     });
 }
