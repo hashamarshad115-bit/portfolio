@@ -1,6 +1,10 @@
+// ===== Device Detection =====
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || window.innerWidth <= 768
+    || ('ontouchstart' in window);
+
 // ===== Font Awesome Icon Fallback =====
 (function checkIcons() {
-    // Test if Font Awesome loaded by checking a known icon renders
     const testEl = document.createElement('i');
     testEl.className = 'fas fa-check';
     testEl.style.cssText = 'position:absolute;visibility:hidden;font-size:20px';
@@ -8,7 +12,6 @@
     setTimeout(() => {
         const computed = window.getComputedStyle(testEl, ':before').content;
         document.body.removeChild(testEl);
-        // If icons didn't load, inject Kit as last resort
         if (!computed || computed === 'none' || computed === '') {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -18,23 +21,27 @@
     }, 1000);
 })();
 
-// ===== Animated Background Particles (Aurora style) =====
+// ===== Animated Background Particles =====
 (function createParticles() {
     const bg = document.getElementById('bgAnimation');
-    const colors = ['#a855f7', '#6c5ce7', '#06b6d4', '#7c3aed', '#0ea5e9'];
-    for (let i = 0; i < 25; i++) {
+    const colors = ['#a855f7','#6c5ce7','#06b6d4','#7c3aed','#0ea5e9'];
+    // Far fewer particles on mobile — no blur filter (GPU killer)
+    const count = isMobile ? 4 : 25;
+    for (let i = 0; i < count; i++) {
         const p = document.createElement('div');
         p.classList.add('particle');
-        const size = Math.random() * 300 + 80;
+        const size = isMobile ? Math.random() * 150 + 100 : Math.random() * 300 + 80;
         const color = colors[i % colors.length];
+        const blurVal = isMobile ? 0 : size * 0.3;
         p.style.cssText = `
             width:${size}px; height:${size}px;
             left:${Math.random() * 110 - 5}%;
             top:${Math.random() * 110 - 5}%;
             animation-duration:${Math.random() * 25 + 15}s;
             animation-delay:-${Math.random() * 20}s;
-            background:radial-gradient(circle, ${color}22 0%, transparent 70%);
-            filter:blur(${size * 0.3}px);
+            background:radial-gradient(circle, ${color}${isMobile ? '18' : '22'} 0%, transparent 70%);
+            ${blurVal > 0 ? `filter:blur(${blurVal}px);` : ''}
+            opacity:${isMobile ? '0.6' : '1'};
         `;
         bg.appendChild(p);
     }
@@ -188,37 +195,39 @@ filterBtns.forEach(btn => {
     });
 });
 
-// ===== Card Tilt Effect (Subtle) =====
-document.querySelectorAll('.project-card, .stat-card, .skill-category').forEach(card => {
-    card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const cx = rect.width / 2;
-        const cy = rect.height / 2;
-        const rotX = ((y - cy) / cy) * -5;
-        const rotY = ((x - cx) / cx) * 5;
-        card.style.transform = `translateY(-6px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-        card.style.transition = 'transform 0.1s ease';
+// ===== Card Tilt Effect — desktop only =====
+if (!isMobile) {
+    document.querySelectorAll('.project-card, .stat-card, .skill-category').forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const cx = rect.width / 2;
+            const cy = rect.height / 2;
+            const rotX = ((y - cy) / cy) * -5;
+            const rotY = ((x - cx) / cx) * 5;
+            card.style.transform = `translateY(-6px) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            card.style.transition = 'transform 0.1s ease';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = '';
+            card.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
+        });
     });
-    card.addEventListener('mouseleave', () => {
-        card.style.transform = '';
-        card.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
-    });
-});
+}
 
-// ===== Magnetic Buttons =====
-document.querySelectorAll('.btn-primary').forEach(btn => {
-    btn.addEventListener('mousemove', (e) => {
-        const rect = btn.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-        btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px) translateY(-2px)`;
+// ===== Magnetic Buttons — desktop only =====
+if (!isMobile) {
+    document.querySelectorAll('.btn-primary').forEach(btn => {
+        btn.addEventListener('mousemove', (e) => {
+            const rect = btn.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px) translateY(-2px)`;
+        });
+        btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
     });
-    btn.addEventListener('mouseleave', () => {
-        btn.style.transform = '';
-    });
-});
+}
 
 // ===== Ripple Effect on Buttons =====
 document.querySelectorAll('.btn').forEach(btn => {
@@ -266,15 +275,17 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// ===== Cursor glow follow effect =====
-const cursorGlow = document.createElement('div');
-cursorGlow.className = 'cursor-glow';
-document.body.appendChild(cursorGlow);
-let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
-document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
-(function animateGlow() {
-    glowX += (mouseX - glowX) * 0.08;
-    glowY += (mouseY - glowY) * 0.08;
-    cursorGlow.style.transform = `translate(${glowX}px, ${glowY}px)`;
-    requestAnimationFrame(animateGlow);
-})();
+// ===== Cursor glow — desktop only =====
+if (!isMobile) {
+    const cursorGlow = document.createElement('div');
+    cursorGlow.className = 'cursor-glow';
+    document.body.appendChild(cursorGlow);
+    let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+    document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+    (function animateGlow() {
+        glowX += (mouseX - glowX) * 0.08;
+        glowY += (mouseY - glowY) * 0.08;
+        cursorGlow.style.transform = `translate(${glowX}px, ${glowY}px)`;
+        requestAnimationFrame(animateGlow);
+    })();
+}
