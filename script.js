@@ -21,31 +21,7 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
     }, 1000);
 })();
 
-// ===== Animated Background Particles =====
-(function createParticles() {
-    const bg = document.getElementById('bgAnimation');
-    const colors = ['#a855f7','#6c5ce7','#06b6d4','#7c3aed','#0ea5e9'];
-    // Far fewer particles on mobile — no blur filter (GPU killer)
-    const count = isMobile ? 4 : 25;
-    for (let i = 0; i < count; i++) {
-        const p = document.createElement('div');
-        p.classList.add('particle');
-        const size = isMobile ? Math.random() * 150 + 100 : Math.random() * 300 + 80;
-        const color = colors[i % colors.length];
-        const blurVal = isMobile ? 0 : size * 0.3;
-        p.style.cssText = `
-            width:${size}px; height:${size}px;
-            left:${Math.random() * 110 - 5}%;
-            top:${Math.random() * 110 - 5}%;
-            animation-duration:${Math.random() * 25 + 15}s;
-            animation-delay:-${Math.random() * 20}s;
-            background:radial-gradient(circle, ${color}${isMobile ? '18' : '22'} 0%, transparent 70%);
-            ${blurVal > 0 ? `filter:blur(${blurVal}px);` : ''}
-            opacity:${isMobile ? '0.6' : '1'};
-        `;
-        bg.appendChild(p);
-    }
-})();
+// Background is now pure CSS aurora — no JS particles needed
 
 // ===== Typing Animation — Full Name =====
 (function typeWriter() {

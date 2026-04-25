@@ -34,26 +34,45 @@ img { max-width:100%; display:block; }
     transition:none; will-change:transform;
 }
 
-/* ===== Aurora Background ===== */
+/* ===== Aurora Background — Pure CSS, crisp at any resolution ===== */
 .bg-animation {
     position:fixed; top:0; left:0; width:100%; height:100%;
     z-index:-1; overflow:hidden;
+    background:
+        radial-gradient(ellipse 900px 700px at 10% 10%, rgba(108,92,231,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 700px 600px at 90% 5%,  rgba(168,85,247,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 800px 700px at 60% 90%, rgba(6,182,212,0.14)  0%, transparent 55%),
+        radial-gradient(ellipse 600px 500px at 85% 55%, rgba(124,58,237,0.12) 0%, transparent 50%);
 }
-.bg-animation .particle {
-    position:absolute; border-radius:50%; opacity:1;
-    animation:floatAurora 30s infinite ease-in-out;
-    will-change:transform;
+.bg-animation::before {
+    content:'';
+    position:absolute; inset:0;
+    background:
+        radial-gradient(ellipse 70% 60% at 20% 50%, rgba(108,92,231,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 75% 25%, rgba(168,85,247,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 55% at 50% 80%, rgba(6,182,212,0.10)  0%, transparent 55%);
+    animation: auroraA 18s ease-in-out infinite alternate;
+    will-change: transform;
 }
-@keyframes floatAurora {
-    0%,100% { transform:translate(0,0) scale(1); }
-    20%      { transform:translate(80px,-120px) scale(1.15); }
-    40%      { transform:translate(-60px,-200px) scale(0.9); }
-    60%      { transform:translate(100px,-80px) scale(1.05); }
-    80%      { transform:translate(-40px,-160px) scale(1.1); }
+.bg-animation::after {
+    content:'';
+    position:absolute; inset:0;
+    background:
+        radial-gradient(ellipse 55% 50% at 35% 20%, rgba(168,85,247,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 65% 55% at 80% 70%, rgba(6,182,212,0.09)  0%, transparent 55%),
+        radial-gradient(ellipse 45% 45% at 10% 85%, rgba(108,92,231,0.08) 0%, transparent 55%);
+    animation: auroraB 24s ease-in-out infinite alternate-reverse;
+    will-change: transform;
 }
-/* Disable particles on mobile for performance */
-@media (max-width:768px) {
-    .bg-animation .particle { animation:none !important; filter:none !important; }
+@keyframes auroraA {
+    0%   { transform:translate(0,0)        scale(1); }
+    50%  { transform:translate(40px,-30px) scale(1.04); }
+    100% { transform:translate(-30px,20px) scale(0.97); }
+}
+@keyframes auroraB {
+    0%   { transform:translate(0,0)        scale(1); }
+    50%  { transform:translate(-50px,40px) scale(1.05); }
+    100% { transform:translate(30px,-25px) scale(0.96); }
 }
 
 /* ===== Glass Card ===== */
@@ -136,7 +155,7 @@ img { max-width:100%; display:block; }
 .hero {
     min-height:100vh; display:flex; flex-direction:column;
     align-items:center; justify-content:center; text-align:center;
-    padding:120px 24px 60px; position:relative;
+    padding:120px 24px 100px; position:relative;
 }
 .hero-content { max-width:820px; }
 .hero-greeting {
@@ -199,9 +218,14 @@ img { max-width:100%; display:block; }
 
 /* Scroll Indicator */
 .scroll-indicator {
-    position:absolute; bottom:32px; display:flex;
-    flex-direction:column; align-items:center; gap:8px;
+    position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
     opacity:0; animation:heroFadeUp 0.8s 1.7s forwards;
+    z-index:1; pointer-events:none;
+}
+/* Hide scroll indicator on short screens to prevent overlap */
+@media (max-height:700px) {
+    .scroll-indicator { display:none; }
 }
 .mouse {
     width:26px; height:42px; border:2px solid var(--text-secondary);
@@ -447,9 +471,8 @@ img { max-width:100%; display:block; }
 @media (max-width:768px) {
     .nav-links {
         position:fixed; top:0; right:-100%; width:280px; height:100vh;
-        background:rgba(7,7,15,0.98); backdrop-filter:none;
-        -webkit-backdrop-filter:none;
         background:rgba(10,10,20,0.99);
+        backdrop-filter:none; -webkit-backdrop-filter:none;
         flex-direction:column; padding:90px 40px 40px; gap:28px;
         transition:right 0.35s var(--ease); z-index:999;
     }
@@ -459,21 +482,22 @@ img { max-width:100%; display:block; }
     .nav-toggle.open span:nth-child(2) { opacity:0; }
     .nav-toggle.open span:nth-child(3) { transform:rotate(-45deg) translate(5px,-5px); }
     .navbar.scrolled { backdrop-filter:none; -webkit-backdrop-filter:none; background:rgba(7,7,15,0.97); }
+    .hero { padding:120px 24px 110px; }
     .hero-name { font-size:clamp(1.9rem,8vw,2.8rem); }
     .projects-grid { grid-template-columns:1fr; }
     .skills-grid { grid-template-columns:1fr; }
     .about-stats { grid-template-columns:1fr 1fr; }
     .section { padding:75px 0; }
     .cursor-glow { display:none; }
-    /* Kill all expensive animations on mobile */
-    .project-card::after { display:none; }
-    .project-card:hover .project-icon { transform:none; }
-    [data-aos] { transition:opacity 0.5s ease, transform 0.5s ease; }
+    /* Glass cards — no backdrop-filter on mobile (expensive) */
+    .glass-card {
+        backdrop-filter:none; -webkit-backdrop-filter:none;
+        background:rgba(255,255,255,0.07);
+    }
+    /* Keep animations but use only GPU-composited properties */
+    [data-aos] { transition:opacity 0.55s ease, transform 0.55s ease; }
     .skill-fill { transition:width 1.2s ease; }
-    /* Reduce hero animation complexity */
-    .hero-socials a:hover { transform:none; box-shadow:none; }
-    .btn-outline:hover { transform:none; }
-    .social-link:hover { transform:none; }
+    .project-card::after { display:none; }
 }
 @media (max-width:480px) {
     .hero-buttons { flex-direction:column; align-items:center; }
